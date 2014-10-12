@@ -290,6 +290,21 @@ h1 {
   padding-right: 5px;
 }
 
+.rep-section-header {
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+}
+
+.header-subtext {
+  font-weight: normal; 
+  font-size: 18px;
+}
+
+
 </style>
 
 <div class="form-container">
@@ -335,7 +350,6 @@ h1 {
   </div>
   <div class="social-container">
     <p class="social-callout"><strong>ISN'T IT TIME FOR YOUR REPRESENTATIVES TO TAKE A STAND?</strong></p>
-    <p style="font-size:14px">Hover over a representative for contact information</p>
     <div class="img-container"></div>
     <div>
       <form id="zip2">
@@ -649,7 +663,27 @@ function drawMap(districtRow) {
 
 function socialCallouts(zip,state,district) {
 
+  // TODO: Finalize copy for section headers
   var renderRepCallout = Handlebars.compile("\
+    {{#if showHeader}}\
+      <div class='rep-section-header'>\
+        {{#if repIsUndecided}}\
+          Undecided\
+          <div class='header-subtext'>Contact your representantive and help them make the right choice!</div>\
+        {{/if}}\
+        \
+        {{#if repIsOnTeamCable}}\
+          Team Cable\
+          <div class='header-subtext'>Tell your rep why you disagree with their position.</div>\
+        {{/if}}\
+        \
+        {{#if repIsOnTeamInternet}}\
+          Team  Internet\
+          <div class='header-subtext'>Give them an encouraging thumbs up!</div>\
+        {{/if}}\
+      </div>\
+    {{/if}}\
+    \
     <div class='img-div to-remove {{stance}}'>\
       <div class='rep-img-container'>\
         <img class='rep-img' src='{{imgUrl}}'>\
@@ -659,6 +693,7 @@ function socialCallouts(zip,state,district) {
         </div>\
         <div class='rep-color'></div>\
       </div>\
+      \
       <div class='social-div'>\
         <a href='{{twitterUrl}}'>\
           <span class='social-label'>Tweet:</span><icon class='icon-fixed-width icon-twitter'></icon>\
@@ -700,7 +735,8 @@ function socialCallouts(zip,state,district) {
     var imgUrl = "https://www.battleforthenet.com/images/scoreboard/" + 
         state.toLowerCase() + rep.last_name.toLowerCase() + 
         rep.first_name.toLowerCase() + ".jpg";
-  
+    var stance = stanceData[stanceLookupKey];
+
     var repData = {
       lastName: rep.last_name,
       imgUrl: imgUrl,
@@ -709,7 +745,10 @@ function socialCallouts(zip,state,district) {
       twitterUrl: twitterUrl,
       contactFormUrl: rep.contact_form,
       chamber: rep.chamber,
-      stance: stanceData[stanceLookupKey]
+      stance: stance,
+      repIsUndecided: (stance === 'undecided'),
+      repIsOnTeamInternet: (stance === 'team-internet'),
+      repIsOnTeamCable: (stance === 'team-cable')
     };
 
     return repData;
@@ -733,7 +772,13 @@ function socialCallouts(zip,state,district) {
     return sortVal(rep1) - sortVal(rep2);
   };
 
-  repsWithData.sort(sortByStance).forEach(function(repData) {
+  var seenStanceAlready = {};
+  repsWithData.sort(sortByStance).forEach(function(repData, index) {
+    if (!seenStanceAlready[repData.stance]) {
+      repData.showHeader = true;
+      seenStanceAlready[repData.stance] = true;
+    }
+
     $('.img-container').append(renderRepCallout(repData));
   });
 }

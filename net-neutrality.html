@@ -235,7 +235,6 @@ h1 {
 }
 
 .social-div {
-  background-color: rgba(0,0,0,0.8);
   color: white;
   cursor: pointer;
   font-weight: bold;
@@ -247,7 +246,7 @@ h1 {
 }
 
 .social-div a {
-  color: white;
+  color: #ccc;
   text-decoration: none;
   font-size: 20px;
   display: block;
@@ -276,7 +275,7 @@ h1 {
   text-decoration: none;
 }
 
-.img-social:hover a {
+.social-div a:hover {
   color: #2dbb9b;
   text-decoration: none;
 }
@@ -293,8 +292,7 @@ h1 {
 .rep-section-header {
   font-size: 20px;
   font-weight: bold;
-  color: white;
-  width: 100%;
+  color: #ccc;
   padding: 10px;
   text-align: center;
 }
@@ -331,19 +329,18 @@ h1 {
     <p id="district-title">District Name</p>
     <hr>
     <p>
-      District <span id="district-name"></span> submitted <span id="district-count"></span> 
-      <span id="district-type"></span>
+      Your district submitted <span id="district-count"></span> comments
       <span class="callout hide" id="district-callout">
-        <br><br>That's more than <span id="district-callout-tally"></span> districts.
+        <br><br><span id="district-callout-sentence"></span>
       </span>
       <div class="hide" id="district-callout-graph"></div>
     </p>
     <hr>
     <p>
-      <span id="state-name"></span> submitted <span id="state-count"></span> 
+      <span id="state-name"></span> submitted <span id="state-count"></span> comments
       <span id="state-type"></span>
       <span class="callout hide" id="state-callout">
-        <br><br>That's more than <span id="state-callout-tally"></span> states.
+        <br><br><span id="state-callout-sentence"></span>
       </span>
       <div class="hide" id="state-callout-graph"></div>
     </p>
@@ -372,58 +369,112 @@ h1 {
 
 <script>
 
-var cma = d3.format(",");
+// Load data, set comma formatting, define Tweet URL
 var data = dataset.content;
+var cma = d3.format(",");
+var LINK_URL = "http://www.batteforthenet.com"
 
+// Finds which callouts to write and makes graphs
 function write(row,rankings,aggData) {
   
   var districtNumber = row.district,
-      stateName = row.name;
-      
+      stateName = row.name,
+      stateCode = row.state, 
+      stateComments = _.where(aggData,{state:stateCode})[0].comments;  
+
+  // Add district and state names, district and state comment counts
   d3.select("#district-name").text(districtNumber);
   d3.select("#state-name").text(stateName);
+  d3.select("#district-count").text(cma(d3.round(row.comments)));
+  d3.select("#state-count").text(cma(d3.round(stateComments)));
   
-  if (rankings.districtTotal <= 135) {
-    
-    districtCounts(row.comments, rankings.districtTotal, true, "comments");
-    drawDistrictBar(row,"comments");
-    
-  } else if (rankings.districtPC <= 135) {
-    
-    districtCounts(row.comments_per_capita, rankings.districtPC, true, "comments per 100,000 people")
-    drawDistrictBar(row,"comments_per_capita");
-    
-  } else {
-    districtCounts(row.comments, rankings.districtTotal, false, "comments")
+  // Get feature to call out
+  var districtFeature = getDistrictFeature(rankings);
+  var stateFeature = getStateFeature(rankings);
+  
+  // Write district text
+  if (districtFeature == 1) {
+    d3.select("#district-callout-sentence")
+        .text("Your district is " + sfx(rankings.districtNationalRank) +
+        " in the country in total comments!");
+  } else if (districtFeature == 2) {
+    d3.select("#district-callout-sentence")
+        .text("Your district is in the top 10% of the country in total comments!");
+  } else if (districtFeature == 3) {
+    d3.select("#district-callout-sentence")
+        .text("Your district is " + sfx(rankings.districtStateRank) + 
+        " in the state in total comments!");
   }
   
-  if (rankings.stateTotal <= 20) {
-    
-    var stateComments = _.where(aggData, {state:row.state} )[0].comments;
-    stateCounts(stateComments, rankings.stateTotal, true, "comments");
+  // Make district chart
+  if (districtFeature < 4) {
+    $("#district-callout").removeClass("hide");
+    drawDistrictBar(row,"comments");
+  }
+  
+  // Write state text
+  if (stateFeature == 1) {
+    d3.select("#state-callout-sentence")
+        .text("In the country, your state is " + sfx(rankings.stateTotalRank) + 
+        " in total comments and " + sfx(rankings.statePCRank) + " in comment per 100,000 people!");
+  } else if (stateFeature == 2) {
+    d3.select("#state-callout-sentence")
+        .text("In the country, your state is " + sfx(rankings.stateTotalRank) + 
+        " in total comments!")
+  } else if (stateFeature == 3) {
+    d3.select("#state-callout-sentence")
+        .text("In the country, your state is " + sfx(rankings.statePCRank) + 
+        " in comments per 100,000 people!")
+  }
+  
+  // Make state chart
+  if (stateFeature < 3) {
+    $("#state-callout").removeClass("hide");  
     drawStateBar(row.state,aggData,"comments");
-    
-  } else if (rankings.statePC <= 20) {
-    
-    var stateCommentPC = _.where(aggData, {state:row.state} )[0].commentsPC;
-    stateCounts(stateCommentPC, rankings.statePC, true, "comments per 100,000 people")
+  } else if (stateFeature == 3) {
+    $("#state-callout").removeClass("hide");  
     drawStateBar(row.state,aggData,"commentsPC");
-    
+  }
+  
+}
+
+// Gets district-level feature to highlight 
+function getDistrictFeature(rankings) {
+  if (rankings.districtNationalRank <= 20) {
+    return 1;
+  } else if (rankings.districtNationalRank <= 43) {
+    return 2;
+  } else if (rankings.districtStateRank <= 10 && 
+    rankings.districtStateRank < rankings.inStateDistricts/2) {
+    return 3  
   } else {
-    
-    var stateComments = _.where(aggData, {state:row.state} )[0].comments;
-    stateCounts(stateComments, rankings.statePC, false, "comments")
-    
+    return 4
   }
 }
 
+// Gets sentence type to highlight for state
+function getStateFeature(rankings) {
+  if (rankings.stateTotalRank <= 10) {
+    if (rankings.statePCRank <= 10) {
+      return 1
+    } else {
+      return 2
+    }
+  } else if (rankings.statePCRank <= 10) { 
+    return 3
+  } else { 
+    return 4
+  }
+}
+
+// Finds total and per capita state tallies
 function stateTallys() {
   var states = _.uniq(_.pluck(data,"state")),
       arr = [];
   
   states.forEach(function(s) {
     var stateData = _.where(data,{state:s}),
-        population = d3.sum(_.pluck(stateData,"population")),
+        population = d3.sum(_.pluck(stateData,"population18")),
         comments = d3.sum(_.pluck(stateData,"comments"));
     
     arr.push({ state:s,comments:comments,commentsPC:(100000*comments/population) })
@@ -432,6 +483,7 @@ function stateTallys() {
   return arr;
 }
 
+// Draw district bar graph
 function drawDistrictBar(row,type) {
   
   var value = row[type],
@@ -448,6 +500,7 @@ function drawDistrictBar(row,type) {
   drawBar(barData,"district");
 }
 
+// Draw state bar graph
 function drawStateBar(state,agg,type) {
   
   var stateName = _.where(data,{state:state})[0].name,
@@ -465,6 +518,7 @@ function drawStateBar(state,agg,type) {
 
 }
 
+// Draw generic bar graph
 function drawBar(data,type) {
   
   var id = "#" + type + "-callout-graph";
@@ -518,67 +572,54 @@ function drawBar(data,type) {
       .attr("fill","#2dbb9b")
 }
 
+// Gets district and state rankings, by total and per capita comments
 function getRankings(districtRow,agg) {
-  var dComments = districtRow.comments,
-      dCommentPC = districtRow.comments_per_capita,
-      state = districtRow.state,
-      sComments = _.where(agg,{state:state})[0].comments,
-      sCommentPC = _.where(agg,{state:state})[0].commentsPC;
   
-  var lowerDComments = _.filter(data,function(d){ return d.comments > dComments; }),
-      lowerDCommentPC = _.filter(data,function(d){ return d.comments_per_capita > dCommentPC; }),
-      lowerSComments = _.filter(agg,function(d){ return d.comments > sComments; }),
-      lowerSCommentPC = _.filter(agg,function(d){ return d.commentsPC > sCommentPC; });
+  var stateCode = districtRow.state;
   
+  // Get district counts for distict rankings
+  var districtComments = districtRow.comments,
+      districtsWithMore = _.filter(data,function(d){ return d.comments > districtComments; }),
+      inStateDistrictsWithMore = _.where(districtsWithMore, {state: stateCode }),
+      inStateDistricts = _.where(data, {state: stateCode });
+  
+  var districtNationalRank = districtsWithMore.length + 1,
+      districtStateRank = inStateDistrictsWithMore.length + 1;
+  
+  // Get state ranks
+  var stateComments = _.where(agg, {state: stateCode })[0].comments,
+      stateCommentsPerCapita = _.where(agg, {state: stateCode })[0].commentsPC,
+      statesWithMoreTotal = _.filter(agg, function(d) { return d.comments > stateComments; }),
+      statesWithMorePC = _.filter(agg, function(d) { return d.commentsPC > stateCommentsPerCapita; });
+
+  var stateTotalRank = statesWithMoreTotal.length + 1,
+      statePCRank = statesWithMorePC.length + 1;
+  
+  // Make rank object
   var rankings = {
-    districtTotal: lowerDComments.length + 1,
-    districtPC: lowerDCommentPC.length + 1,
-    stateTotal: lowerSComments.length + 1,
-    statePC: lowerSCommentPC.length + 1
+    districtNationalRank: districtNationalRank,
+    districtStateRank: districtStateRank,
+    inStateDistricts: inStateDistricts.length,
+    stateTotalRank: stateTotalRank,
+    statePCRank: statePCRank
   }
   
   return rankings;
 }
 
+// Returns district row
 function selectDistrict(state,district) {
   return _.where(data,{letter_code:state,district:district})[0];
 }
 
+// Write main district name
 function nameDistrict(districtRow) {
   var name = districtRow.geography;
   d3.select("#district-title").text(name);
 }
 
-function district(districtRow) {
-  var total = districtRow.comments;
-  var perCapita = districtRow.comments_per_capita;
-  
-  d3.select("#district-total").text(cma(total));
-  d3.select("#district-pc").text(cma(Math.round(perCapita)));
-}
 
-function districtCounts(tally,ranking,inTop,type) {
-
-  d3.select("#district-count").text(cma(d3.round(tally)));
-  d3.select("#district-type").text(type);
-  
-  if (inTop == true) {
-    $("#district-callout").removeClass("hide");
-    d3.select("#district-callout-tally").text(435 - ranking);
-  }
-}
-
-function stateCounts(tally,ranking,inTop,type) {
-  d3.select("#state-count").text(cma(d3.round(tally)));
-  d3.select("#state-type").text(type);
-  
-  if (inTop == true) {
-    $("#state-callout").removeClass("hide");
-    d3.select("#state-callout-tally").text(50 - ranking);
-  }
-}
-
-
+// Draws district map. Draws state outline, shades district
 function drawMap(districtRow) {
   
   var district = districtRow.district_code,
@@ -661,12 +702,11 @@ function drawMap(districtRow) {
 
 
 
-function socialCallouts(zip,state,district) {
+function socialCallouts(zip,row,agg) {
 
-  // TODO: Finalize copy for section headers
   var renderRepCallout = Handlebars.compile("\
     {{#if showHeader}}\
-      <div class='rep-section-header'>\
+      <div class='rep-section-header to-remove'>\
         {{#if repIsUndecided}}\
           Undecided\
           <div class='header-subtext'>Contact your representantive and help them make the right choice!</div>\
@@ -717,25 +757,38 @@ function socialCallouts(zip,state,district) {
   var result = httpGet(url),
       json = JSON.parse(result);
   
+  var state = row.letter_code,
+      district = row.district,
+      stateComments = _.where(agg,{state:row.state})[0].comments
+  
   var reps = getReps(json,state,district);
 
-  var cleanupString = function(str) {
-    return removeNonASCII(str).toLowerCase();
-  };
+  var undecidedCount = 0;
 
-  var stanceData = getStanceData();
   
   var repsWithData = reps.map(function(rep, index) {
-    var stanceLookupKey = cleanupString(rep.first_name) + ' ' + cleanupString(rep.last_name);
+
+    if (rep.chamber == 'house') {
+      var stance = row.rep_alignment,
+          imgUrl = "https://www.battleforthenet.com" + row.rep_image,
+          constituentComments = row.comments; 
+          
+    } else if (rep.chamber == 'senate' && rep.state_rank == 'senior') { 
+      var stance = row.sen1_alignment,
+          imgUrl = "https://www.battleforthenet.com" + row.sen1_image,
+          constituentComments = stateComments;
+          
+    } else if (rep.chamber == 'senate' && rep.state_rank == 'junior') { 
+      var stance = row.sen2_alignment,
+          imgUrl = "https://www.battleforthenet.com" + row.sen2_image;
+          constituentComments = stateComments;
+    }
 
     var twitterUrl = "https://twitter.com/intent/tweet?text=.%40" + rep.twitter_id + 
-      "%20whose%20side%20are%20you%20on%3F%20%23TeamInternet%20or%20%23" + 
-      "TeamCable%3F%20Ask%20the%20FCC%20for%20Title%20II%20reclassification" +
-      "!&url=https://www.battleforthenet.com&related=fightfortheftr";
-    var imgUrl = "https://www.battleforthenet.com/images/scoreboard/" + 
-        state.toLowerCase() + rep.last_name.toLowerCase() + 
-        rep.first_name.toLowerCase() + ".jpg";
-    var stance = stanceData[stanceLookupKey];
+      " Please tell the %40FCC you want them to protect %23NetNeutrality. " + 
+      cma(constituentComments) + " of your constituents already did! " + LINK_URL
+  
+    if (stance === 'undecided') { undecidedCount += 1; }
 
     var repData = {
       lastName: rep.last_name,
@@ -744,7 +797,7 @@ function socialCallouts(zip,state,district) {
       phoneNumber: rep.phone,
       twitterUrl: twitterUrl,
       contactFormUrl: rep.contact_form,
-      chamber: rep.chamber,
+      chamber: rep.chamber.toUpperCase(),
       stance: stance,
       repIsUndecided: (stance === 'undecided'),
       repIsOnTeamInternet: (stance === 'team-internet'),
@@ -783,16 +836,15 @@ function socialCallouts(zip,state,district) {
   });
 }
 
+// Gets reps from Sunlight API response
 function getReps(json,state,dist) {
-  console.log(json);
-  console.log(dist);
   reps = _.where(json.results,{state:state,chamber:"house",district:dist})
   sens = _.where(json.results,{state:state,chamber:"senate"})
   
   return reps.concat(sens)
-   
 }
 
+// Gets district via Sunlight API from zip
 function getDistrict(zip) {
   var url = "//congress.api.sunlightfoundation.com/districts/locate?zip=" + zip + 
     "&apikey=29f0edf2b7384260863a8b51bcbed266";
@@ -803,7 +855,7 @@ function getDistrict(zip) {
   return json.results[0];
 }
 
-
+// Retrives URL
 function httpGet(theUrl) {
   var xmlHttp = null;
   
@@ -813,6 +865,7 @@ function httpGet(theUrl) {
   return xmlHttp.responseText;
 }
 
+// Input for initial form
 $("#zip").submit(function( event ) {
 
   var zip = $("#box1").val(),
@@ -821,8 +874,9 @@ $("#zip").submit(function( event ) {
   checkZip(zip);
 });
 
+// Input for 2nd zip form
 $("#zip2").submit(function( event ) {
-  console.log('here')
+  
   var zip = $("#box2").val(),
       zip = +zip;
       
@@ -830,6 +884,8 @@ $("#zip2").submit(function( event ) {
 
 });
 
+// Checks if zip is valid. If yes, renders graphic.
+// If not, displays bad zip error.
 function checkZip(zip) {
   if (zip === parseInt(zip)) {
     if (zip >= 10000 && zip <= 99999) {
@@ -849,618 +905,63 @@ function checkZip(zip) {
   }
 }
 
+// Show bad Zip error
 function badZip() {
   d3.selectAll(".zip-alert")
       .text("Please enter a valid zip code")
 }
 
+function sfx(int) {
+  if (int % 10 == 1) { return "1st"; }
+  else if (int % 10 == 2) { return "2nd"; }
+  else if (int % 10 == 3) { return "3rd"; }
+  else { return int + "th"; }
+}
+
 function render(geo,zip) {
   
+  // Removes initial form
   $(".form-container").addClass("hide");
+  //Shows graphic
   $(".graphic-container").removeClass("hide");
+  
+  //Removes state callouts in case of second zip
   $("#state-callout").addClass("hide");
   $("#district-callout").addClass("hide");
   
+  // Removes zip alert
   d3.selectAll(".zip-alert").text("");
+  
+  // Removes rep images and social
   d3.selectAll(".to-remove").remove();
   
+  // Find state and district info
   var stateAbbrev = geo.state,
       districtNumber = geo.district;
   
+  // Fix for DC district
   if (stateAbbrev == "DC") { districtNumber = 98; }
 
+  // Pull out row from data table 
   var districtRow = selectDistrict(stateAbbrev,districtNumber);
-  console.log(JSON.stringify(districtRow));
 
+  // Get state aggregate data
   var aggData = stateTallys();
 
+  // Calculate rankings
   var rankings = getRankings(districtRow,aggData)
-
-  write(districtRow,rankings,aggData);
-
-  drawMap(districtRow);
+  
+  // District title
   nameDistrict(districtRow);
-  socialCallouts(zip,stateAbbrev,districtNumber);
-}
-
-
-function getStanceData() {
-  var stanceData = [
-    '"Congressperson name,Congressperson alignment,FIRST,LAST',
-    '"LaMalfa, Doug",undecided,LaMalfa,Doug',
-    '"Huffman, Jared",team-internet,Huffman,Jared',
-    '"McDermott, Jim",team-internet,McDermott,Jim',
-    '"Maloney, Carolyn B.",undecided,Maloney,Carolyn',
-    '"Blumenauer, Earl",team-internet,Blumenauer,Earl',
-    '"Garamendi, John",undecided,Garamendi,John',
-    '"Nadler, Jerrold",team-internet,Nadler,Jerrold',
-    '"McClintock, Tom",undecided,McClintock,Tom',
-    '"Quigley, Mike",undecided,Quigley,Mike',
-    '"Velázquez, Nydia M.",undecided,Velázquez,Nydia',
-    '"Thompson, Mike",undecided,Thompson,Mike',
-    '"Matsui, Doris O.",team-internet,Matsui,Doris',
-    '"Polis, Jared",undecided,Polis,Jared',
-    '"Capuano, Michael E.",team-internet,Capuano,Michael',
-    '"Schakowsky, Janice D.",team-internet,Schakowsky,Janice',
-    '"Smith, Lamar",undecided,Smith,Lamar',
-    '"Bera, Ami",undecided,Bera,Ami',
-    '"Cook, Paul",undecided,Cook,Paul',
-    '"Schrader, Kurt",team-cable,Schrader,Kurt',
-    '"Bonamici, Suzanne",team-internet,Bonamici,Suzanne',
-    '"Smith, Adam",undecided,Smith,Adam',
-    '"DeGette, Diana",undecided,DeGette,Diana',
-    '"Sarbanes, John P.",team-internet,Sarbanes,John',
-    '"Williams, Roger",undecided,Williams,Roger',
-    '"McCaul, Michael T.",undecided,McCaul,Michael',
-    '"Price, David E.",undecided,Price,David',
-    '"DelBene, Suzan K.",team-internet,DelBene,Suzan',
-    '"Ellison, Keith",team-internet,Ellison,Keith',
-    '"Clark, Katherine M.",undecided,Clark,Katherine',
-    '"Davis, Danny K.",undecided,Davis,Danny',
-    '"McNerney, Jerry",undecided,McNerney,Jerry',
-    '"Doggett, Lloyd",undecided,Doggett,Lloyd',
-    '"Meehan, Patrick",undecided,Meehan,Patrick',
-    '"Denham, Jeff",undecided,Denham,Jeff',
-    '"Miller, George",undecided,Miller,George',
-    '"Gutiérrez, Luis V.",undecided,Gutiérrez,Luis',
-    '"Pelosi, Nancy",team-internet,Pelosi,Nancy',
-    '"DeFazio, Peter A.",team-internet,DeFazio,Peter',
-    '"Clarke, Yvette D.",undecided,Clarke,Yvette',
-    '"Van Hollen, Chris",undecided,Van Hollen,Chris',
-    '"Wolf, Frank R.",undecided,Wolf,Frank',
-    '"Lee, Barbara",team-internet,Lee,Barbara',
-    '"Hultgren, Randy",undecided,Hultgren,Randy',
-    '"Price, Tom",undecided,Price,Tom',
-    '"Speier, Jackie",undecided,Speier,Jackie',
-    '"Rangel, Charles B.",undecided,Rangel,Charles',
-    '"Cummings, Elijah E.",undecided,Cummings,Elijah',
-    '"Fattah, Chaka",undecided,Fattah,Chaka',
-    '"Larsen, Rick",undecided,Larsen,Rick',
-    '"Roskam, Peter J.",undecided,Roskam,Peter',
-    '"Holding, George",undecided,Holding,George',
-    '"Swalwell, Eric",undecided,Swalwell,Eric',
-    '"Jeffries, Hakeem S.",undecided,Jeffries,Hakeem',
-    '"Perlmutter, Ed",undecided,Perlmutter,Ed',
-    '"Pocan, Mark",team-internet,Pocan,Mark',
-    '"Costa, Jim",undecided,Costa,Jim',
-    '"Connolly, Gerald E.",undecided,Connolly,Gerald',
-    '"Moran, James P.",undecided,Moran,James',
-    '"Honda, Michael M.",undecided,Honda,Michael',
-    '"Schweikert, David",undecided,Schweikert,David',
-    '"Eshoo, Anna G.",team-internet,Eshoo,Anna',
-    '"Lofgren, Zoe",team-internet,Lofgren,Zoe',
-    '"Lewis, John",team-internet,Lewis,John',
-    '"Sinema, Kyrsten",undecided,Sinema,Kyrsten',
-    '"McCollum, Betty",team-internet,McCollum,Betty',
-    '"Gingrey, Phil",undecided,Gingrey,Phil',
-    '"Doyle, Michael F.",undecided,Doyle,Michael',
-    '"Coffman, Mike",undecided,Coffman,Mike',
-    '"Ruppersberger, C. A. Dutch",undecided,Ruppersberger,C.',
-    '"Tiberi, Patrick J.",undecided,Tiberi,Patrick',
-    '"Poe, Ted",undecided,Poe,Ted',
-    '"Gibson, Christopher P.",undecided,Gibson,Christopher',
-    '"Beatty, Joyce",undecided,Beatty,Joyce',
-    '"Duckworth, Tammy",undecided,Duckworth,Tammy',
-    '"Gardner, Cory",undecided,Gardner,Cory',
-    '"Marchant, Kenny",undecided,Marchant,Kenny',
-    '"Farr, Sam",team-internet,Farr,Sam',
-    '"Valadao, David G.",undecided,Valadao,David',
-    '"Walberg, Tim",undecided,Walberg,Tim',
-    'Vacant seat,undecided,#VALUE!,#VALUE',
-    '"Flores, Bill",undecided,Flores,Bill',
-    '"Dingell, John D.",undecided,Dingell,John',
-    '"Barber, Ron",undecided,Barber,Ron',
-    '"Chaffetz, Jason",undecided,Chaffetz,Jason',
-    '"Sessions, Pete",undecided,Sessions,Pete',
-    '"Nunes, Devin",undecided,Nunes,Devin',
-    '"Kennedy, Joseph P., III",undecided,Kennedy,Joseph',
-    '"Lynch, Stephen F.",undecided,Lynch,Stephen',
-    '"Carter, John R.",undecided,Carter,John',
-    '"Matheson, Jim",undecided,Matheson,Jim',
-    '"McCarthy, Kevin",team-cable,McCarthy,Kevin',
-    '"Capps, Lois",undecided,Capps,Lois',
-    '"Brady, Robert A.",undecided,Brady,Robert',
-    '"Stewart, Chris",undecided,Stewart,Chris',
-    '"Stivers, Steve",undecided,Stivers,Steve',
-    '"Schneider, Bradley S.",undecided,Schneider,Bradley',
-    '"Wagner, Ann",undecided,Wagner,Ann',
-    '"McKeon, Howard P. ""Buck""",undecided,McKeon,Howard',
-    '"Welch, Peter",undecided,Welch,Peter',
-    '"Brownley, Julia",undecided,Brownley,Julia',
-    '"Delaney, John K.",undecided,Delaney,John',
-    '"Kilmer, Derek",undecided,Kilmer,Derek',
-    '"Lujan Grisham, Michelle",undecided,Lujan Grisham,Michelle',
-    '"Culberson, John Abney",undecided,Culberson,John',
-    '"Chu, Judy",undecided,Chu,Judy',
-    '"McGovern, James P.",team-internet,McGovern,James',
-    '"Schiff, Adam B.",undecided,Schiff,Adam',
-    '"Pastor, Ed",undecided,Pastor,Ed',
-    '"Cooper, Jim",undecided,Cooper,Jim',
-    '"Gerlach, Jim",undecided,Gerlach,Jim',
-    '"Mica, John L.",undecided,Mica,John',
-    '"Brown, Corrine",team-cable,Brown,Corrine',
-    '"Paulsen, Erik",undecided,Paulsen,Erik',
-    '"Fudge, Marcia L.",undecided,Fudge,Marcia',
-    '"Foster, Bill",undecided,Foster,Bill',
-    '"Lance, Leonard",undecided,Lance,Leonard',
-    '"Crowley, Joseph",undecided,Crowley,Joseph',
-    '"Reichert, David G.",undecided,Reichert,David',
-    '"Johnson, Sam",undecided,Johnson,Sam',
-    '"Ellmers, Renee L.",undecided,Ellmers,Renee',
-    '"Clay, Wm. Lacy",team-cable,Clay,Wm.',
-    '"Walden, Greg",team-cable,Walden,Greg',
-    '"Rogers, Mike",undecided,Rogers,Mike',
-    '"Davis, Rodney",undecided,Davis,Rodney',
-    '"Hastings, Alcee L.",team-cable,Hastings,Alcee',
-    '"Bentivolio, Kerry L.",undecided,Bentivolio,Kerry',
-    '"Lipinski, Daniel",undecided,Lipinski,Daniel',
-    '"Coble, Howard",undecided,Coble,Howard',
-    '"Edwards, Donna F.",undecided,Edwards,Donna',
-    '"Slaughter, Louise McIntosh",undecided,Slaughter,Louise',
-    '"Luján, Ben Ray",undecided,Luján,Ben',
-    '"Heck, Denny",undecided,Heck,Denny',
-    '"Brooks, Susan W.",undecided,Brooks,Susan',
-    '"Pingree, Chellie",undecided,Pingree,Chellie',
-    '"Tonko, Paul",undecided,Tonko,Paul',
-    '"Renacci, James B.",undecided,Renacci,James',
-    '"Chabot, Steve",undecided,Chabot,Steve',
-    '"Schwartz, Allyson Y.",undecided,Schwartz,Allyson',
-    '"Cárdenas, Tony",undecided,Cárdenas,Tony',
-    '"Pittenger, Robert",undecided,Pittenger,Robert',
-    '"Reed, Tom",undecided,Reed,Tom',
-    '"Sherman, Brad",undecided,Sherman,Brad',
-    '"Harris, Andy",undecided,Harris,Andy',
-    '"Miller, Gary G.",undecided,Miller,Gary',
-    '"Burgess, Michael C.",undecided,Burgess,Michael',
-    '"Frankel, Lois",undecided,Frankel,Lois',
-    '"Levin, Sander M.",undecided,Levin,Sander',
-    '"Frelinghuysen, Rodney P.",undecided,Frelinghuysen,Rodney',
-    '"Scott, Robert C. ""Bobby""",team-internet,Scott,Robert',
-    '"Holt, Rush",team-internet,Holt,Rush',
-    '"Tsongas, Niki",undecided,Tsongas,Niki',
-    '"Napolitano, Grace F.",undecided,Napolitano,Grace',
-    '"Wittman, Robert J.",undecided,Wittman,Robert',
-    '"Webster, Daniel",undecided,Webster,Daniel',
-    '"Israel, Steve",undecided,Israel,Steve',
-    '"Tierney, John F.",team-internet,Tierney,John',
-    '"Castor, Kathy",undecided,Castor,Kathy',
-    '"Fitzpatrick, Michael G.",undecided,Fitzpatrick,Michael',
-    '"Labrador, Raúl R.",undecided,Labrador,Raúl',
-    '"Kuster, Ann M.",undecided,Kuster,Ann',
-    '"Lamborn, Doug",undecided,Lamborn,Doug',
-    '"Waxman, Henry A.",team-internet,Waxman,Henry',
-    '"Grayson, Alan",undecided,Grayson,Alan',
-    '"Amash, Justin",undecided,Amash,Justin',
-    '"Herrera Beutler, Jaime",undecided,Herrera Beutler,Jaime',
-    '"Woodall, Rob",undecided,Woodall,Rob',
-    '"Luetkemeyer, Blaine",undecided,Luetkemeyer,Blaine',
-    '"Sensenbrenner, F. James, Jr.",undecided,Sensenbrenner,F.',
-    '"Maffei, Daniel B.",undecided,Maffei,Daniel',
-    '"Cleaver, Emanuel",undecided,Cleaver,Emanuel',
-    '"Rothfus, Keith J.",undecided,Rothfus,Keith',
-    '"Butterfield, G. K.",team-cable,Butterfield,G.',
-    '"Hurt, Robert",undecided,Hurt,Robert',
-    '"Heck, Joseph J.",undecided,Heck,Joseph',
-    '"Moore, Gwen",undecided,Moore,Gwen',
-    '"Kirkpatrick, Ann",undecided,Kirkpatrick,Ann',
-    '"Hoyer, Steny H.",undecided,Hoyer,Steny',
-    '"Joyce, David P.",undecided,Joyce,David',
-    '"Becerra, Xavier",undecided,Becerra,Xavier',
-    '"Shea-Porter, Carol",team-internet,Shea-Porter,Carol',
-    '"Gabbard, Tulsi",undecided,Gabbard,Tulsi',
-    '"Negrete McLeod, Gloria",undecided,Negrete McLeod,Gloria',
-    '"Ruiz, Raul",undecided,Ruiz,Raul',
-    '"Wasserman Schultz, Debbie",undecided,Wasserman Schultz,Debbie',
-    '"Collins, Chris",undecided,Collins,Chris',
-    '"Carson, André",team-internet,Carson,André',
-    '"Bass, Karen",undecided,Bass,Karen',
-    '"Lowey, Nita M.",undecided,Lowey,Nita',
-    '"Huizenga, Bill",undecided,Huizenga,Bill',
-    '"Salmon, Matt",undecided,Salmon,Matt',
-    '"McMorris Rodgers, Cathy",team-cable,McMorris Rodgers,Cathy',
-    '"Jolly, David W.",undecided,Jolly,David',
-    '"Jackson Lee, Sheila",undecided,Jackson Lee,Sheila',
-    '"Simpson, Michael K.",undecided,Simpson,Michael',
-    '"Meng, Grace",undecided,Meng,Grace',
-    '"Johnson, Henry C. ""Hank"", Jr.",undecided,Johnson,Henry',
-    '"Murphy, Tim",undecided,Murphy,Tim',
-    '"Dent, Charles W.",undecided,Dent,Charles',
-    '"Meadows, Mark",undecided,Meadows,Mark',
-    '"Maloney, Sean Patrick",undecided,Maloney,Sean',
-    '"Wenstrup, Brad R.",undecided,Wenstrup,Brad',
-    '"Bilirakis, Gus M.",undecided,Bilirakis,Gus',
-    '"Garrett, Scott",undecided,Garrett,Scott',
-    '"DeLauro, Rosa L.",undecided,DeLauro,Rosa',
-    '"Ryan, Tim",undecided,Ryan,Tim',
-    '"Young, Don",undecided,Young,Don',
-    '"Grijalva, Raúl M.",team-internet,Grijalva,Raúl',
-    '"Young, Todd C.",undecided,Young,Todd',
-    '"McHenry, Patrick T.",undecided,McHenry,Patrick',
-    '"Rush, Bobby L.",team-cable,Rush,Bobby',
-    '"Yarmuth, John A.",undecided,Yarmuth,John',
-    '"Ros-Lehtinen, Ileana",undecided,Ros-Lehtinen,Ileana',
-    '"Pitts, Joseph R.",undecided,Pitts,Joseph',
-    '"Bishop, Timothy H.",undecided,Bishop,Timothy',
-    '"Sánchez, Linda T.",undecided,Sánchez,Linda',
-    '"Neal, Richard E.",undecided,Neal,Richard',
-    '"Yoho, Ted S.",undecided,Yoho,Ted',
-    '"Loebsack, David",undecided,Loebsack,David',
-    '"Gosar, Paul A.",undecided,Gosar,Paul',
-    '"Yoder, Kevin",undecided,Yoder,Kevin',
-    '"Schock, Aaron",undecided,Schock,Aaron',
-    '"Payne, Donald M., Jr.",undecided,Payne,Donald',
-    '"Daines, Steve",undecided,Daines,Steve',
-    '"Richmond, Cedric L.",undecided,Richmond,Cedric',
-    '"Petri, Thomas E.",undecided,Petri,Thomas',
-    '"Duncan, John J., Jr.",undecided,Duncan,John',
-    '"Sires, Albio",team-cable,Sires,Albio',
-    '"Titus, Dina",undecided,Titus,Dina',
-    '"Veasey, Marc A.",team-cable,Veasey,Marc',
-    '"Turner, Michael R.",undecided,Turner,Michael',
-    '"Runyan, Jon",undecided,Runyan,Jon',
-    '"Higgins, Brian",undecided,Higgins,Brian',
-    '"Courtney, Joe",undecided,Courtney,Joe',
-    '"Hanna, Richard L.",undecided,Hanna,Richard',
-    '"Kaptur, Marcy",team-internet,Kaptur,Marcy',
-    '"Olson, Pete",undecided,Olson,Pete',
-    '"Rokita, Todd",undecided,Rokita,Todd',
-    '"Kline, John",undecided,Kline,John',
-    '"Gibbs, Bob",undecided,Gibbs,Bob',
-    '"Grimm, Michael G.",undecided,Grimm,Michael',
-    '"Castro, Joaquin",undecided,Castro,Joaquin',
-    '"Tipton, Scott R.",undecided,Tipton,Scott',
-    '"Scalise, Steve",team-cable,Scalise,Steve',
-    '"Esty, Elizabeth H.",undecided,Esty,Elizabeth',
-    '"Carney, John C., Jr.",undecided,Carney,John',
-    '"Posey, Bill",undecided,Posey,Bill',
-    '"Granger, Kay",undecided,Granger,Kay',
-    '"Owens, William L.",team-cable,Owens,William',
-    '"Pallone, Frank, Jr.",undecided,Pallone,"Frank,"',
-    '"Keating, William R.",undecided,Keating,William',
-    '"Himes, James A.",undecided,Himes,James',
-    '"Deutch, Theodore E.",undecided,Deutch,Theodore',
-    '"Foxx, Virginia",undecided,Foxx,Virginia',
-    '"Broun, Paul C.",undecided,Broun,Paul',
-    '"Ryan, Paul",undecided,Ryan,Paul',
-    '"Rigell, E. Scott",undecided,Rigell,E.',
-    '"Bachmann, Michele",undecided,Bachmann,Michele',
-    '"Goodlatte, Bob",undecided,Goodlatte,Bob',
-    '"Massie, Thomas",undecided,Massie,Thomas',
-    '"Peters, Gary C.",team-internet,Peters,Gary',
-    '"Gallego, Pete P.",undecided,Gallego,Pete',
-    '"Michaud, Michael H.",undecided,Michaud,Michael',
-    '"Ross, Dennis A.",undecided,Ross,Dennis',
-    '"Clyburn, James E.",undecided,Clyburn,James',
-    '"Royce, Edward R.",undecided,Royce,Edward',
-    '"Johnson, Eddie Bernice",undecided,Johnson,Eddie',
-    '"Graves, Sam",undecided,Graves,Sam',
-    '"Smith, Christopher H.",undecided,Smith,Christopher',
-    '"Cartwright, Matt",undecided,Cartwright,Matt',
-    '"DeSantis, Ron",undecided,DeSantis,Ron',
-    '"Upton, Fred",team-cable,Upton,Fred',
-    '"Engel, Eliot L.",undecided,Engel,Eliot',
-    '"Bishop, Rob",undecided,Bishop,Rob',
-    '"Amodei, Mark E.",undecided,Amodei,Mark',
-    '"Roybal-Allard, Lucille",undecided,Roybal-Allard,Lucille',
-    '"Larson, John B.",undecided,Larson,John',
-    '"Franks, Trent",undecided,Franks,Trent',
-    '"Latham, Tom",undecided,Latham,Tom',
-    '"Thompson, Glenn",undecided,Thompson,Glenn',
-    '"Crenshaw, Ander",undecided,Crenshaw,Ander',
-    '"DesJarlais, Scott",undecided,DesJarlais,Scott',
-    '"Wilson, Frederica S.",undecided,Wilson,Frederica',
-    '"Terry, Lee",undecided,Terry,Lee',
-    '"Kind, Ron",undecided,Kind,Ron',
-    '"Brady, Kevin",undecided,Brady,Kevin',
-    '"Collins, Doug",undecided,Collins,Doug',
-    '"Jenkins, Lynn",undecided,Jenkins,Lynn',
-    '"Jordan, Jim",undecided,Jordan,Jim',
-    '"Green, Al",undecided,Green,Al',
-    '"Takano, Mark",team-internet,Takano,Mark',
-    '"Camp, Dave",undecided,Camp,Dave',
-    '"Hartzler, Vicky",undecided,Hartzler,Vicky',
-    '"Barletta, Lou",undecided,Barletta,Lou',
-    '"Barton, Joe",team-cable,Barton,Joe',
-    '"Calvert, Ken",undecided,Calvert,Ken',
-    '"McIntyre, Mike",undecided,McIntyre,Mike',
-    '"Cicilline, David N.",team-internet,Cicilline,David',
-    '"McCarthy, Carolyn",undecided,McCarthy,Carolyn',
-    '"Boehner, John A.",team-cable,Boehner,John',
-    '"Barr, Andy",undecided,Barr,Andy',
-    '"Buchanan, Vern",undecided,Buchanan,Vern',
-    '"Sanford, Mark",undecided,Sanford,Mark',
-    '"Perry, Scott",undecided,Perry,Scott',
-    '"Fleischmann, Charles J. ""Chuck""",undecided,Fleischmann,Charles',
-    '"Southerland, Steve, II",undecided,Southerland,"Steve,"',
-    '"Kinzinger, Adam",undecided,Kinzinger,Adam',
-    '"Scott, David",team-cable,Scott,David',
-    '"Blackburn, Marsha",team-cable,Blackburn,Marsha',
-    '"Garcia, Joe",undecided,Garcia,Joe',
-    '"Braley, Bruce L.",undecided,Braley,Bruce',
-    '"Clawson, Curt",undecided,Clawson,Curt',
-    '"Marino, Tom",undecided,Marino,Tom',
-    '"Walz, Timothy J.",undecided,Walz,Timothy',
-    '"Fortenberry, Jeff",undecided,Fortenberry,Jeff',
-    '"Murphy, Patrick",undecided,Murphy,Patrick',
-    '"King, Peter T.",undecided,King,Peter',
-    '"Lankford, James",undecided,Lankford,James',
-    '"Waters, Maxine",undecided,Waters,Maxine',
-    '"Bridenstine, Jim",undecided,Bridenstine,Jim',
-    '"Pearce, Stevan",undecided,Pearce,Stevan',
-    '"Womack, Steve",undecided,Womack,Steve',
-    '"Griffith, H. Morgan",undecided,Griffith,H.',
-    '"Latta, Robert E.",team-cable,Latta,Robert',
-    '"Bucshon, Larry",undecided,Bucshon,Larry',
-    '"Hensarling, Jeb",undecided,Hensarling,Jeb',
-    '"Bustos, Cheri",undecided,Bustos,Cheri',
-    '"Ribble, Reid J.",undecided,Ribble,Reid',
-    '"Langevin, James R.",undecided,Langevin,James',
-    '"Kelly, Mike",undecided,Kelly,Mike',
-    '"Jones, Walter B.",undecided,Jones,Walter',
-    '"Hanabusa, Colleen W.",undecided,Hanabusa,Colleen',
-    '"Benishek, Dan",undecided,Benishek,Dan',
-    '"Black, Diane",undecided,Black,Diane',
-    '"Horsford, Steven A.",undecided,Horsford,Steven',
-    '"LoBiondo, Frank A.",undecided,LoBiondo,Frank',
-    '"Hahn, Janice",undecided,Hahn,Janice',
-    '"Messer, Luke",undecided,Messer,Luke',
-    '"Miller, Candice S.",undecided,Miller,Candice',
-    '"Rooney, Thomas J.",undecided,Rooney,Thomas',
-    '"Pascrell, Bill, Jr.",undecided,Pascrell,"Bill,"',
-    '"Campbell, John",undecided,Campbell,John',
-    '"Miller, Jeff",undecided,Miller,Jeff',
-    '"Cole, Tom",undecided,Cole,Tom',
-    '"Long, Billy",undecided,Long,Billy',
-    '"Enyart, William L.",undecided,Enyart,William',
-    '"Sanchez, Loretta",undecided,Sanchez,Loretta',
-    '"Kildee, Daniel T.",undecided,Kildee,Daniel',
-    '"Diaz-Balart, Mario",undecided,Diaz-Balart,Mario',
-    '"Kelly, Robin L.",undecided,Kelly,Robin',
-    '"Fincher, Stephen Lee",undecided,Fincher,Stephen',
-    '"King, Steve",undecided,King,Steve',
-    '"Duffy, Sean P.",undecided,Duffy,Sean',
-    '"Guthrie, Brett",undecided,Guthrie,Brett',
-    '"Lowenthal, Alan S.",team-internet,Lowenthal,Alan',
-    '"Hall, Ralph M.",undecided,Hall,Ralph',
-    '"Johnson, Bill",undecided,Johnson,Bill',
-    '"Nolan, Richard M.",undecided,Nolan,Richard',
-    '"Walorski, Jackie",undecided,Walorski,Jackie',
-    '"Rohrabacher, Dana",undecided,Rohrabacher,Dana',
-    '"Bachus, Spencer",undecided,Bachus,Spencer',
-    '"Pompeo, Mike",team-cable,Pompeo,Mike',
-    '"Cohen, Steve",undecided,Cohen,Steve',
-    '"Wilson, Joe",undecided,Wilson,Joe',
-    '"Huelskamp, Tim",undecided,Huelskamp,Tim',
-    '"Hastings, Doc",undecided,Hastings,Doc',
-    '"Hudson, Richard",undecided,Hudson,Richard',
-    '"Cramer, Kevin",undecided,Cramer,Kevin',
-    '"Kingston, Jack",undecided,Kingston,Jack',
-    '"Brooks, Mo",undecided,Brooks,Mo',
-    '"Visclosky, Peter J.",team-internet,Visclosky,Peter',
-    '"Forbes, J. Randy",undecided,Forbes,J.',
-    '"Griffin, Tim",undecided,Griffin,Tim',
-    '"Issa, Darrell E.",undecided,Issa,Darrell',
-    '"Shimkus, John",undecided,Shimkus,John',
-    '"Stutzman, Marlin A.",undecided,Stutzman,Marlin',
-    '"Nugent, Richard B.",undecided,Nugent,Richard',
-    '"Gowdy, Trey",undecided,Gowdy,Trey',
-    '"Shuster, Bill",undecided,Shuster,Bill',
-    '"Sewell, Terri A.",undecided,Sewell,Terri',
-    '"Roe, David P.",undecided,Roe,David',
-    '"Hunter, Duncan",undecided,Hunter,Duncan',
-    '"Stockman, Steve",undecided,Stockman,Steve',
-    '"McKinley, David B.",undecided,McKinley,David',
-    '"Conyers, John, Jr.",team-internet,Conyers,"John,"',
-    '"Farenthold, Blake",undecided,Farenthold,Blake',
-    '"Cassidy, Bill",undecided,Cassidy,Bill',
-    '"Noem, Kristi L.",undecided,Noem,Kristi',
-    '"Graves, Tom",undecided,Graves,Tom',
-    '"Lummis, Cynthia M.",undecided,Lummis,Cynthia',
-    '"Green, Gene",team-cable,Green,Gene',
-    '"Lucas, Frank D.",undecided,Lucas,Frank',
-    '"Hinojosa, Rubén",undecided,Hinojosa,Rubén',
-    '"Vargas, Juan",undecided,Vargas,Juan',
-    '"Westmoreland, Lynn A.",undecided,Westmoreland,Lynn',
-    '"Capito, Shelley Moore",undecided,Capito,Shelley',
-    '"Meeks, Gregory W.",team-cable,Meeks,Gregory',
-    '"Peterson, Collin C.",undecided,Peterson,Collin',
-    '"Smith, Jason T.",undecided,Smith,Jason',
-    '"Peters, Scott H.",team-cable,Peters,Scott',
-    '"Cuellar, Henry",team-cable,Cuellar,Henry',
-    '"Cotton, Tom",undecided,Cotton,Tom',
-    '"Duncan, Jeff",undecided,Duncan,Jeff',
-    '"Weber, Randy K., Sr.",undecided,Weber,Randy',
-    '"Davis, Susan A.",undecided,Davis,Susan',
-    '"Mulvaney, Mick",undecided,Mulvaney,Mick',
-    '"Whitfield, Ed",undecided,Whitfield,Ed',
-    '"Conaway, K. Michael",undecided,Conaway,K.',
-    '"Harper, Gregg",undecided,Harper,Gregg',
-    '"Barrow, John",team-cable,Barrow,John',
-    '"Scott, Austin",undecided,Scott,Austin',
-    '"Thornberry, Mac",undecided,Thornberry,Mac',
-    '"Aderholt, Robert B.",undecided,Aderholt,Robert',
-    '"Neugebauer, Randy",undecided,Neugebauer,Randy',
-    '"O\'Rourke, Beto",undecided,O\'Rourke,Beto',
-    '"Palazzo, Steven M.",undecided,Palazzo,Steven',
-    '"Mullin, Markwayne",undecided,Mullin,Markwayne',
-    '"Fleming, John",undecided,Fleming,John',
-    '"Boustany, Charles W., Jr.",undecided,Boustany,Charles',
-    '"Rogers, Harold",undecided,Rogers,Harold',
-    '"Nunnelee, Alan",undecided,Nunnelee,Alan',
-    '"Byrne, Bradley",undecided,Byrne,Bradley',
-    '"Bishop, Sanford D., Jr.",team-cable,Bishop,Sanford',
-    '"Smith, Adrian",undecided,Smith,Adrian',
-    '"Roby, Martha",undecided,Roby,Martha',
-    '"Crawford, Eric A. ""Rick""",undecided,Crawford,Eric',
-    '"Serrano, José E.",team-internet,Serrano,José',
-    '"Gohmert, Louie",undecided,Gohmert,Louie',
-    '"Rahall, Nick J., II",undecided,Rahall,Nick',
-    '"McAllister, Vance M.",undecided,McAllister,Vance',
-    '"Rice, Tom",undecided,Rice,Tom',
-    '"Vela, Filemon",undecided,Vela,Filemon',
-    '"Thompson, Bennie G.",undecided,Thompson,Bennie',
-    '"Boxer, Barbara ",team-internet,Boxer,Barbara',
-    '"Cantwell, Maria ",undecided,Cantwell,Maria',
-    '"Gillibrand, Kirsten E. ",team-internet,Gillibrand,Kirsten',
-    '"Merkley, Jeff ",team-internet,Merkley,Jeff',
-    '"Durbin, Richard J. ",undecided,Durbin,Richard',
-    '"Bennet, Michael F. ",undecided,Bennet,Michael',
-    '"Markey, Edward J. ",team-internet,Markey,Edward',
-    '"Cornyn, John ",team-cable,Cornyn,John',
-    '"Cardin, Benjamin L. ",team-internet,Cardin,Benjamin',
-    '"Burr, Richard ",undecided,Burr,Richard',
-    '"Franken, Al ",team-internet,Franken,Al',
-    '"Casey, Jr., Robert P. ",undecided,Casey,"Jr.,"',
-    '"Kaine, Tim ",undecided,Kaine,Tim',
-    '"Chambliss, Saxby ",undecided,Chambliss,Saxby',
-    '"Baldwin, Tammy ",undecided,Baldwin,Tammy',
-    '"Flake, Jeff ",undecided,Flake,Jeff',
-    '"Brown, Sherrod ",undecided,Brown,Sherrod',
-    '"Levin, Carl ",team-internet,Levin,Carl',
-    '"Hatch, Orrin G. ",undecided,Hatch,Orrin',
-    '"Blunt, Roy ",team-cable,Blunt,Roy',
-    '"Leahy, Patrick J. ",undecided,Leahy,Patrick',
-    '"Heinrich, Martin ",undecided,Heinrich,Martin',
-    '"Alexander, Lamar ",undecided,Alexander,Lamar',
-    '"Nelson, Bill ",team-internet,Nelson,Bill',
-    '"Booker, Cory A. ",team-internet,Booker,Cory',
-    '"Coats, Daniel ",undecided,Coats,Daniel',
-    '"Collins, Susan M. ",undecided,Collins,Susan',
-    '"Crapo, Mike ",undecided,Crapo,Mike',
-    '"Ayotte, Kelly ",undecided,Ayotte,Kelly',
-    '"Heller, Dean ",undecided,Heller,Dean',
-    '"Hirono, Mazie K. ",undecided,Hirono,Mazie',
-    '"Blumenthal, Richard ",team-internet,Blumenthal,Richard',
-    '"Begich, Mark ",undecided,Begich,Mark',
-    '"Mcconnell, Mitch ",team-cable,Mcconnell,Mitch',
-    '"Grassley, Chuck ",undecided,Grassley,Chuck',
-    '"Moran, Jerry ",team-cable,Moran,Jerry',
-    '"Tester, Jon ",undecided,Tester,Jon',
-    '"Landrieu, Mary L. ",undecided,Landrieu,Mary',
-    '"Carper, Thomas R. ",undecided,Carper,Thomas',
-    '"Graham, Lindsey ",undecided,Graham,Lindsey',
-    '"Fischer, Deb ",undecided,Fischer,Deb',
-    '"Reed, Jack ",undecided,Reed,Jack',
-    '"Coburn, Tom ",undecided,Coburn,Tom',
-    '"Boozman, John ",undecided,Boozman,John',
-    '"Sessions, Jeff ",undecided,Sessions,Jeff',
-    '"Heitkamp, Heidi ",undecided,Heitkamp,Heidi',
-    '"Manchin Iii, Joe ",undecided,Manchin Iii,Joe',
-    '"Johnson, Tim ",undecided,Johnson,Tim',
-    '"Barrasso, John ",team-cable,Barrasso,John',
-    '"Cochran, Thad ",undecided,Cochran,Thad',
-    '"Feinstein, Dianne ",undecided,Feinstein,Dianne',
-    '"Murray, Patty ",undecided,Murray,Patty',
-    '"Schumer, Charles E. ",team-internet,Schumer,Charles',
-    '"Wyden, Ron ",team-internet,Wyden,Ron',
-    '"Kirk, Mark ",undecided,Kirk,Mark',
-    '"Udall, Mark ",undecided,Udall,Mark',
-    '"Warren, Elizabeth ",team-internet,Warren,Elizabeth',
-    '"Cruz, Ted ",undecided,Cruz,Ted',
-    '"Mikulski, Barbara A. ",undecided,Mikulski,Barbara',
-    '"Hagan, Kay R. ",undecided,Hagan,Kay',
-    '"Klobuchar, Amy ",team-internet,Klobuchar,Amy',
-    '"Toomey, Patrick J. ",undecided,Toomey,Patrick',
-    '"Warner, Mark R. ",undecided,Warner,Mark',
-    '"Isakson, Johnny ",undecided,Isakson,Johnny',
-    '"Johnson, Ron ",undecided,Johnson,Ron',
-    '"Mccain, John ",undecided,Mccain,John',
-    '"Portman, Rob ",undecided,Portman,Rob',
-    '"Stabenow, Debbie ",undecided,Stabenow,Debbie',
-    '"Lee, Mike ",undecided,Lee,Mike',
-    '"Mccaskill, Claire ",undecided,Mccaskill,Claire',
-    '"Sanders, Bernard ",team-internet,Sanders,Bernard',
-    '"Udall, Tom ",undecided,Udall,Tom',
-    '"Corker, Bob ",undecided,Corker,Bob',
-    '"Rubio, Marco ",undecided,Rubio,Marco',
-    '"Menendez, Robert ",undecided,Menendez,Robert',
-    '"Donnelly, Joe ",undecided,Donnelly,Joe',
-    '"King, Jr., Angus S. ",team-internet,King,"Jr.,"',
-    '"Risch, James E. ",undecided,Risch,James',
-    '"Shaheen, Jeanne ",undecided,Shaheen,Jeanne',
-    '"Reid, Harry ",undecided,Reid,Harry',
-    '"Schatz, Brian ",undecided,Schatz,Brian',
-    '"Murphy, Christopher ",undecided,Murphy,Christopher',
-    '"Murkowski, Lisa ",undecided,Murkowski,Lisa',
-    '"Paul, Rand ",undecided,Paul,Rand',
-    '"Harkin, Tom ",undecided,Harkin,Tom',
-    '"Roberts, Pat ",undecided,Roberts,Pat',
-    '"Walsh, John E. ",undecided,Walsh,John',
-    '"Vitter, David ",undecided,Vitter,David',
-    '"Coons, Christopher A. ",undecided,Coons,Christopher',
-    '"Scott, Tim ",undecided,Scott,Tim',
-    '"Johanns, Mike ",undecided,Johanns,Mike',
-    '"Whitehouse, Sheldon ",team-internet,Whitehouse,Sheldon',
-    '"Inhofe, James M. ",undecided,Inhofe,James',
-    '"Pryor, Mark L. ",undecided,Pryor,Mark',
-    '"Shelby, Richard C. ",undecided,Shelby,Richard',
-    '"Hoeven, John ",undecided,Hoeven,John',
-    '"Rockefeller Iv, John D. ",undecided,Rockefeller Iv,John',
-    '"Thune, John ",team-cable,Thune,John',
-    '"Enzi, Michael B. ",undecided,Enzi,Michael',
-    '"Wicker, Roger F. ",undecided,Wicker,Roger"'
-  ].join('\n');
-
-  return CSVToArray(stanceData).reduce(function(nameToStanceMap, nextRepRow) {
-    var firstName = removeNonASCII(nextRepRow[3]).toLowerCase();
-    var lastName = removeNonASCII(nextRepRow[2]).toLowerCase();
-    var repKey = firstName + ' ' + lastName;
-
-    nameToStanceMap[repKey] = nextRepRow[1];
-    return nameToStanceMap;
-  }, {});
-}
-
-// from: http://stackoverflow.com/questions/1293147/javascript-code-to-parse-csv-data
-function CSVToArray( strData, strDelimiter ){
-  strDelimiter = (strDelimiter || ",");
-  var objPattern = new RegExp((
-      "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" + // Delimiters.
-      "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" + // Quoted fields.
-      "([^\"\\" + strDelimiter + "\\r\\n]*))" // Standard fields.
-    ), "gi");
-  var arrData = [[]];
-  var arrMatches = null;
-
-  while (arrMatches = objPattern.exec(strData)){
-    var strMatchedDelimiter = arrMatches[1];
-    if (strMatchedDelimiter.length && strMatchedDelimiter !== strDelimiter ){
-        arrData.push([]);
-    }
-
-    var strMatchedValue;
-    if (arrMatches[2]){
-        strMatchedValue = arrMatches[2].replace(new RegExp("\"\"", "g"), "\"");
-    } else {
-        strMatchedValue = arrMatches[3];
-    }
-    arrData[arrData.length - 1].push(strMatchedValue);
-  }
-  return(arrData);
-}
-
-function removeNonASCII(str) {
-  return str.replace(/[^A-Za-z 0-9 \.,\?""!@#\$%\^&\*\(\)-_=\+;:<>\/\\\|\}\{\[\]`~]*/g, '')
+  
+  // Write comment text and graph callouts
+  write(districtRow,rankings,aggData);
+  
+  // Render map
+  drawMap(districtRow);
+  
+  // Render social callouts and images
+  socialCallouts(zip,districtRow,aggData);
 }
 
 </script>

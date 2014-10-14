@@ -627,8 +627,8 @@ function drawMap(districtRow) {
       state = districtRow.state;
   
   queue()
-    .defer(d3.json, "https://dl.dropboxusercontent.com/s/dxie1mlge8q5hw7/us.json")
-    .defer(d3.json, "https://dl.dropboxusercontent.com/s/vychs70tft0sotx/us-congress-113.json")
+    .defer(d3.json, "https://cdn.rawgit.com/dwaltrip/net-neutrality-cta-by-zip/master/assets/us.json")
+    .defer(d3.json, "https://cdn.rawgit.com/dwaltrip/net-neutrality-cta-by-zip/master/assets/us-congress-113.json")
     .await(ready);
     
   function ready(error,us,congress) {
@@ -771,17 +771,17 @@ function socialCallouts(zip,row,agg) {
 
     if (rep.chamber == 'house') {
       var stance = row.rep_alignment,
-          imgUrl = "https://www.battleforthenet.com" + row.rep_image,
+          imgUrl = row.rep_image,
           constituentComments = row.comments; 
           
     } else if (rep.chamber == 'senate' && rep.state_rank == 'senior') { 
       var stance = row.sen1_alignment,
-          imgUrl = "https://www.battleforthenet.com" + row.sen1_image,
+          imgUrl = row.sen1_image,
           constituentComments = stateComments;
           
     } else if (rep.chamber == 'senate' && rep.state_rank == 'junior') { 
       var stance = row.sen2_alignment,
-          imgUrl = "https://www.battleforthenet.com" + row.sen2_image;
+          imgUrl = row.sen2_image,
           constituentComments = stateComments;
     }
 

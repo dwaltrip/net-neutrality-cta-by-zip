@@ -372,6 +372,7 @@ h1 {
 // Load data, set comma formatting, define Tweet URL
 var data = dataset.content;
 var cma = d3.format(",");
+var zero = d3.format("05d");
 var LINK_URL = "http://www.batteforthenet.com"
 
 // Finds which callouts to write and makes graphs
@@ -888,15 +889,17 @@ $("#zip2").submit(function( event ) {
 // If not, displays bad zip error.
 function checkZip(zip) {
   if (zip === parseInt(zip)) {
-    if (zip >= 10000 && zip <= 99999) {
+    if (zip >= 00000 && zip <= 99999) {
        
-       geo = getDistrict(zip);
+      zip = zero(zip);
+      geo = getDistrict(zip);
        
-       if (typeof geo === 'undefined') {
-         badZip()
-       } else {
+      if (typeof geo === 'undefined') {
+        badZip()
+      } else {
         render(geo,zip)
-       }
+      }
+      
     } else {
       badZip();
     }

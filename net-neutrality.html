@@ -13,7 +13,7 @@ p {
 hr {
   border: 0;
   height: 1px;
-  background: #666;
+  background: #292929;
 }
 
 .highlight { fill: #2dbb9b; }
@@ -127,7 +127,7 @@ h1 {
 }
 
 .graphic-div {
-  width: 350px;
+  width: 380px;
   height: 400px;
   position: relative;
   display: inline-block;
@@ -143,8 +143,8 @@ h1 {
   display: none;
 }
 
-.callout {
-  color: #2dbb9b;
+.state-counter-sentence, .district-counter-sentence, .callout {
+  font-size: 18px;
 }
 
 #district-title {
@@ -165,6 +165,7 @@ h1 {
 
 .y.axis, .x.axis text {
   fill: #7573bc;
+  font-size: 12px;
 }
 
 .axis-label {
@@ -172,9 +173,13 @@ h1 {
   fill: #343444;
 }
 
-.highlight-label {
+.bar-label {
   font-size: 11px;
-  fill: #2dbb9b;
+}
+
+.graph-title {
+  fill: #7573bc;
+  font-size: 12px;
 }
 
 .social-callout {
@@ -326,22 +331,25 @@ h1 {
 <div class="graphic-container hide">
   <div class="graphic-div" id="map"></div>
   <div class="graphic-div" id="stats">
-    <p id="district-title">District Name</p>
+    <p id="district-title">You're in <span id="district-name"></span></p>
     <hr>
     <p>
-      Your district submitted <span id="district-count"></span> comments
-      <span class="callout hide" id="district-callout">
-        <br><br><span id="district-callout-sentence"></span>
-      </span>
+      <p class="district-counter-sentence hide">
+        Your district submitted <span id="district-count"></span> comments
+      </p>
+      <p class="callout hide" id="district-callout">
+        <span id="district-callout-sentence"></span>
+      </p>
       <div class="hide" id="district-callout-graph"></div>
     </p>
     <hr>
     <p>
-      <span id="state-name"></span> submitted <span id="state-count"></span> comments
-      <span id="state-type"></span>
-      <span class="callout hide" id="state-callout">
-        <br><br><span id="state-callout-sentence"></span>
-      </span>
+      <p class="state-counter-sentence hide">
+        Your state submitted <span id="state-count"></span> comments
+      </p>
+      <p class="callout hide" id="state-callout">
+        <span id="state-callout-sentence"></span>
+      </p>
       <div class="hide" id="state-callout-graph"></div>
     </p>
   </div>
@@ -373,7 +381,7 @@ h1 {
 var data = dataset.content;
 var cma = d3.format(",");
 var zero = d3.format("05d");
-var LINK_URL = "http://www.batteforthenet.com"
+var LINK_URL = "http://www.batteforthenet.com";
 
 // Finds which callouts to write and makes graphs
 function write(row,rankings,aggData) {
@@ -384,7 +392,6 @@ function write(row,rankings,aggData) {
       stateComments = _.where(aggData,{state:stateCode})[0].comments;  
 
   // Add district and state names, district and state comment counts
-  d3.select("#district-name").text(districtNumber);
   d3.select("#state-name").text(stateName);
   d3.select("#district-count").text(cma(d3.round(row.comments)));
   d3.select("#state-count").text(cma(d3.round(stateComments)));
@@ -397,7 +404,7 @@ function write(row,rankings,aggData) {
   if (districtFeature == 1) {
     d3.select("#district-callout-sentence")
         .text("Your district is " + sfx(rankings.districtNationalRank) +
-        " in the country in total comments!");
+        " in the entire country in total comments!");
   } else if (districtFeature == 2) {
     d3.select("#district-callout-sentence")
         .text("Your district is in the top 10% of the country in total comments!");
@@ -410,14 +417,18 @@ function write(row,rankings,aggData) {
   // Make district chart
   if (districtFeature < 4) {
     $("#district-callout").removeClass("hide");
+    $(".district-counter-sentence").addClass("hide");
     drawDistrictBar(row,"comments");
+  } else {
+    $(".district-counter-sentence").removeClass("hide");
   }
+
   
   // Write state text
   if (stateFeature == 1) {
     d3.select("#state-callout-sentence")
         .text("In the country, your state is " + sfx(rankings.stateTotalRank) + 
-        " in total comments and " + sfx(rankings.statePCRank) + " in comment per 100,000 people!");
+        " in total comments and " + sfx(rankings.statePCRank) + " in comments per 100,000 people!");
   } else if (stateFeature == 2) {
     d3.select("#state-callout-sentence")
         .text("In the country, your state is " + sfx(rankings.stateTotalRank) + 
@@ -430,11 +441,15 @@ function write(row,rankings,aggData) {
   
   // Make state chart
   if (stateFeature < 3) {
-    $("#state-callout").removeClass("hide");  
+    $("#state-callout").removeClass("hide");
+    $(".state-counter-sentence").addClass("hide");
     drawStateBar(row.state,aggData,"comments");
   } else if (stateFeature == 3) {
     $("#state-callout").removeClass("hide");  
+    $(".state-counter-sentence").addClass("hide");
     drawStateBar(row.state,aggData,"commentsPC");
+  } else {
+    $(".state-counter-sentence").removeClass("hide");
   }
   
 }
@@ -494,11 +509,11 @@ function drawDistrictBar(row,type) {
       median = d3.median(arr);
   
   var barData = [
-        {bar: district, value: value},
-        {bar: "Median rate", value: median}
+        {bar: "YOUR DISTRICT", value: value},
+        {bar: "Median District", value: median}
       ];
   
-  drawBar(barData,"district");
+  drawBar(barData,"district","comments");
 }
 
 // Draw state bar graph
@@ -511,24 +526,32 @@ function drawStateBar(state,agg,type) {
       median = d3.median(arr);
       
   var barData = [
-        {bar: stateName, value: value},
-        {bar: "Median rate", value: median}
+        {bar: "YOUR STATE", value: value},
+        {bar: "Median State", value: median}
       ];
   
-  drawBar(barData,"state")
+  drawBar(barData,"state",type)
 
 }
 
 // Draw generic bar graph
-function drawBar(data,type) {
+function drawBar(data,type,metric) {
   
   var id = "#" + type + "-callout-graph";
   
+  if (type == "district") {
+    chartTitle = "Number of comments by district"
+  } else if (type == "state" && metric == "comments") {
+    chartTitle = "Number of comments by state"
+  } else if (type == "state" && metric == "commentsPC") {
+    chartTitle = "Number of comments per 100K people"
+  }
+  
   $(id).removeClass("hide");
   
-  var margin = {top: 10, right: 20, bottom: 20, left: 100},
-      width = 350 - margin.left - margin.right,
-      height = 80 - margin.top - margin.bottom;
+  var margin = {top: 30, right: 20, bottom: 20, left: 100},
+      width = 380 - margin.left - margin.right,
+      height = 100 - margin.top - margin.bottom;
 
   var x = d3.scale.linear()
       .domain([0,Math.max(data[0].value,data[1].value)])
@@ -571,6 +594,33 @@ function drawBar(data,type) {
       .attr("width",function(d) { return x(d.value); })
       .attr("height",y.rangeBand())
       .attr("fill","#2dbb9b")
+  
+  svg.selectAll(".bar-label")
+      .data(data)
+    .enter().append("text")
+      .attr("class","bar-label")
+      .attr("x",function(d) { 
+          var val = x(d.value)
+          if (val < 30) { return val + 3; } else { return val - 3; }
+      })
+      .attr("y",function(d) { return y(d.bar) + y.rangeBand()/2; })
+      .attr("dy",".37em")
+      .attr("text-anchor",function(d) { 
+          var val = x(d.value)
+          if (val >= 30) { return "end"; }
+      })
+      .attr("fill",function(d) { 
+          var val = x(d.value)
+          if (val < 30) { return "#7573bc"; } else { return "black"; }
+      })
+      .text(function(d) { return cma(d3.round(d.value)); })
+  
+  svg.append("text")
+      .attr("class","graph-title")
+      .attr("x",width/2 - margin.left/2)
+      .attr("y",-20)
+      .attr("text-anchor","middle")
+      .text(chartTitle)
 }
 
 // Gets district and state rankings, by total and per capita comments
@@ -615,8 +665,10 @@ function selectDistrict(state,district) {
 
 // Write main district name
 function nameDistrict(districtRow) {
-  var name = districtRow.geography;
-  d3.select("#district-title").text(name);
+  var districtNumber = districtRow.district,
+      stateName = districtRow.name;
+      
+  d3.select("#district-name").text(stateName + "'s " + sfx(districtNumber) + " District");
 }
 
 
@@ -633,7 +685,7 @@ function drawMap(districtRow) {
     
   function ready(error,us,congress) {
     
-    var mapWidth = 350,
+    var mapWidth = 380,
         mapHeight = 400;
   
     var projection = d3.geo.albersUsa()
@@ -765,7 +817,6 @@ function socialCallouts(zip,row,agg) {
   var reps = getReps(json,state,district);
 
   var undecidedCount = 0;
-
   
   var repsWithData = reps.map(function(rep, index) {
 
@@ -968,3 +1019,5 @@ function render(geo,zip) {
 }
 
 </script>
+
+

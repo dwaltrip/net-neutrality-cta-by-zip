@@ -109,8 +109,24 @@ h1 {
   text-align: center;
   color: #fff;
   border-radius: 5px;
-  background: #2dbb9b;
+  background: -webkit-linear-gradient(top,#2dbb9b,#28a588);
   box-shadow: 0 2px 1px rgba(36,95,82,0.7);
+}
+
+.twitter-all {
+  margin: 0 auto;
+  margin: 20px 0px 20px 0px;
+  width
+  max-width: 500px;
+  font-size: 21px;
+  font-weight: bold;
+  border: 0px;
+  padding: 10px 15px 10px 15px;
+  text-align: center;
+  color: #fff;
+  border-radius: 5px;
+  background: -webkit-linear-gradient(top,#2dbb9b,#28a588);
+  cursor: pointer;
 }
 
 .form-box:focus {
@@ -118,7 +134,8 @@ h1 {
 }
 
 .zip-alert {
-  margin-top: 5px;
+  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
 .graphic-container {
@@ -127,8 +144,7 @@ h1 {
 }
 
 .graphic-div {
-  width: 380px;
-  height: 400px;
+  max-width: 400px;
   position: relative;
   display: inline-block;
   margin: 2px;
@@ -359,6 +375,23 @@ h1 {
   text-decoration: none;
 }
 
+.social-btn {
+  background: #3C5A96;
+  border-radius: 3px;
+  display: inline-block;
+  color: #fff;
+  height: 100%;
+  padding: 5px;
+  margin: 5px;
+  text-decoration: none;
+  transition: opacity .3s;
+  width: 180px;
+}
+
+.fb { background: #3C5A96; }
+.twtr { background: #59ADEB; }
+.rdt { background: #FF4500; }
+
 </style>
 
 <div class="form-container">
@@ -370,7 +403,7 @@ h1 {
     <form id="zip" >
       <div class="form-div">
         <input id="box1" class="form-box" type="text" name="zip-form" placeholder="Enter zip code">
-        <p class="zip-alert"></p>
+        <p class="zip-alert"> </p>
       </div>
       
       <div class="form-foot">
@@ -405,17 +438,34 @@ h1 {
     </p>
   </div>
   <div class="social-container">
-    <p class="social-callout"><strong>ISN'T IT TIME FOR YOUR REPRESENTATIVES TO TAKE A STAND?</strong></p>
+    <a id="twitter-all-link" href="">
+      <input class="twitter-all" type="submit" value="TELL YOUR LAWMAKERS">
+    </a>
     <div class="img-container"></div>
     <div>
       <form id="zip2">
         <input id="box2" class="form-box secondary" type="text" name="zip-form" placeholder="Enter another zip code">
-        <input class="form-submit secondary" type="submit" value="SUBMIT">
+        <input class="form-submit secondary" type="submit" value="SUBMIT" style="margin-bottom:2px">
       </form>
-      <p style="color: #666;" class="zip-alert"></p>
+      <p style="color: #666;" class="zip-alert"> </p>
     </div>
   </div>
+  <div class="site-social">
+    <a class="social-btn fb" href="https://www.facebook.com/sharer/sharer.php?u=battleforthenet.com/map">
+      <img src="https://www.battleforthenet.com/images/share/facebook.png">
+      <span class="text">&nbsp; Share on Facebook</span>
+    </a>
+    <a class="social-btn twtr" href="https://twitter.com/intent/tweet?text=This+is+why+your+Internet+is+slow.+It+will+get+worse%2C+unless+we+stop+it+now%3A+battleforthenet.com/map+%23InternetSlowdown&hashtags=&url=http%3A%2F%2Ft.co%2FQ1cRd1MHPg&related=fightfortheftr">
+      <img src="https://www.battleforthenet.com/images/share/twitter.png">
+      <span class="text">&nbsp; Share on Twitter</span>
+    </a>
+    <a class="social-btn rdt" href="https://www.reddit.com/submit?url=https%3A%2F%2Fbattleforthenet.com/map&title=This%20is%20why%20your%20Internet%20is%20slow.%20And%20it%E2%80%99ll%20get%20worse.%20Unless%20you%20take%201%20min%20to%20do%20this%2C%20now.">
+      <img src="https://www.battleforthenet.com/images/share/reddit.png">
+      <span class="text">&nbsp; Share on Reddit</span>
+    </a>
+  </div>
 </div>
+
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.4/queue.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/topojson/1.1.0/topojson.min.js"></script>
@@ -424,15 +474,13 @@ h1 {
 <script src="//cdnjs.cloudflare.com/ajax/libs/chosen/1.1.0/chosen.jquery.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
 
-
-
 <script>
 
 // Load data, set comma formatting, define Tweet URL
 var data = dataset.content;
 var cma = d3.format(",");
 var zero = d3.format("05d");
-var LINK_URL = "http://www.batteforthenet.com";
+var LINK_URL = "http://www.batteforthenet.com/map";
 
 // Finds which callouts to write and makes graphs
 function write(row,rankings,aggData) {
@@ -726,6 +774,8 @@ function nameDistrict(districtRow) {
 // Draws district map. Draws state outline, shades district
 function drawMap(districtRow) {
   
+  console.log(districtRow)
+  
   var district = districtRow.district_code,
       state = districtRow.state;
   
@@ -752,22 +802,31 @@ function drawMap(districtRow) {
         statePath = _.where(topojson.feature(us, us.objects.states).features,{id:state}),
         
         bounds = path.bounds(statePath[0].geometry),
+        geoWidth = bounds[1][0] - bounds[0][0],
+        geoHeight = bounds[1][1] - bounds[0][1],
         maxSize = Math.max((bounds[1][0] - bounds[0][0]),(bounds[1][1] - bounds[0][1])),
         
-        centered = path.centroid(statePath[0].geometry),
+        centered = path.centroid(statePath[0].geometry);
         
         x = centered[0],
         y = centered[1],
         k = Math.min(300/maxSize,30);
-        
+    
+    if (geoWidth >= geoHeight) {
+      finalWidth = mapWidth;
+      finalHeight = (mapWidth/geoWidth) * geoHeight;
+    } else {
+      finalHeight = mapHeight;
+      finalWidth = (mapHeight/geoHeight) * geoWidth;
+    }
         
     var svg = d3.select("#map").append("svg")
         .attr("class","to-remove")
-        .attr("width", mapWidth)
-        .attr("height", mapHeight);
+        .attr("width", finalWidth)
+        .attr("height", finalHeight);
     
     g = svg.append("g")
-        .attr("transform", "translate(" + mapWidth / 2 + "," + mapHeight / 2 + ")scale(" 
+        .attr("transform", "translate(" + finalWidth / 2 + "," + finalHeight / 2 + ")scale(" 
         + k + ")translate(" + -x + "," + -y + ")")
       
     g.append("defs").append("path")
@@ -803,8 +862,6 @@ function drawMap(districtRow) {
         .attr("d", path);
   }
 }
-
-
 
 function socialCallouts(zip,row,agg) {
 
@@ -859,10 +916,14 @@ function socialCallouts(zip,row,agg) {
       json = JSON.parse(result);
   
   var state = row.letter_code,
+      stateName = row.name,
       district = row.district,
       stateComments = _.where(agg,{state:row.state})[0].comments
   
   var reps = getReps(json,state,district);
+  
+  var twitterHandles = _.pluck(reps,"twitter_id")
+  makeTwitterAllLink(twitterHandles,stateComments)
 
   var undecidedCount = 0;
   
@@ -883,10 +944,20 @@ function socialCallouts(zip,row,agg) {
           imgUrl = row.sen2_image,
           constituentComments = stateComments;
     }
-
+    
     var twitterUrl = "https://twitter.com/intent/tweet?text=.%40" + rep.twitter_id + 
       " Please tell the %40FCC you want them to protect %23NetNeutrality. " + 
       cma(constituentComments) + " of your constituents already did! " + LINK_URL
+  
+    var emailText = "Hello, I'm emailing you from " + stateName + ".%0A%0A" + 
+      "I'm calling today because the FCC is approaching a decision on its plan to allow " + 
+      "Internet service providers to charge for preferential treatment.%0A%0A" + 
+      "Those rules would destroy Net Neutrality. Those rules should be thrown out, and " +
+      "broadband instead reclassified as a telecommunications service, protecting Net " + 
+      "Neutrality for years to come.%0A%0A" + 
+      cma(constituentComments) + " of your constituents have already told the FCC " + 
+      "they oppose the plan. Can I count on you to reach out to the FCC in " + 
+      "opposition to their proposed rules?"
   
     if (stance === 'undecided') { undecidedCount += 1; }
 
@@ -897,8 +968,10 @@ function socialCallouts(zip,row,agg) {
       facebookUrl: "https://facebook.com/" + rep.facebook_id,
       phoneNumber: rep.phone,
       twitterUrl: twitterUrl,
-      contactFormUrl: rep.contact_form,
+      contactFormUrl: "mailto:" + rep.oc_email + "?Subject=Protecting%20Net%20Neutrality"+ 
+        "&body=" + emailText,
       chamber: rep.chamber.toUpperCase(),
+      constituentComments: constituentComments,
       stance: stance,
       repIsUndecided: (stance === 'undecided'),
       repIsOnTeamInternet: (stance === 'team-internet'),
@@ -942,32 +1015,65 @@ function socialCallouts(zip,row,agg) {
   var renderCallScript = Handlebars.compile("\
     <div class='call-script'>\
       <div class='script-header'>{{fullName}}</div>\
-      <div class='phone-number'>{{phoneNumber}}</div>\
-      {{scriptText}}\
+      <div class='phone-number'>{{phoneNumber}}</div></br>\
+      {{scriptText1}}</br></br>\
+      {{scriptText2}}</br></br>\
+      {{scriptText3}}</br></br>\
+      {{scriptText4}}\
     </div>\
   ");
 
   var modal = new Modal();
-  var placeholderText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris id erat sit amet dui lobortis vehicula. Duis dictum nisi quis lorem sagittis, et tempus turpis tempor. Phasellus urna sapien, ultrices dignissim tristique pellentesque, efficitur vel velit. Aliquam semper eleifend facilisis. Phasellus lorem magna, venenatis et quam eget, placerat dapibus massa. Nulla vitae ipsum quis sem iaculis malesuada. Sed placerat scelerisque nisl, a lacinia nunc cursus iaculis. Curabitur libero massa, scelerisque in vulputate vitae, accumsan quis quam. Vestibulum ut varius justo. Donec consequat luctus justo. Suspendisse non luctus libero. Fusce varius fermentum est non pretium. Suspendisse viverra, nunc ac efficitur euismod, lacus nisl egestas metus, vitae viverra mi mauris sed elit. Quisque in dui eu ipsum porttitor dignissim. Etiam dapibus urna vel ornare ornare.";
 
   $('.call-link').on('click', function(e) {
     e.preventDefault();
     $link = $(this);
     var repLookupKey = $link.data('lookup-key');
     var repData = repDataCache[repLookupKey];
+    
+    var callText1 = "Hello, my name is _____ and I'm calling you from _____ (city or town).";
+    var callText2 = "I'm calling today because the FCC is approaching a decision on its plan to allow " + 
+      "Internet service providers to charge for preferential treatment.";
+    var callText3 = "Those rules would destroy Net Neutrality. Those rules should be thrown out, and " +
+      "broadband instead reclassified as a telecommunications service, protecting Net " + 
+      "Neutrality for years to come.";
+    var callText4 = cma(repData.constituentComments) + " of your constituents have already told the FCC " + 
+      "they oppose the plan. Can I count on you to reach out to the FCC in " + 
+      "opposition to their proposed rules?";
 
     modal.open({
       content: renderCallScript({
         fullName: repData.fullName,
         phoneNumber: repData.phoneNumber,
-        scriptText: placeholderText
+        scriptText1: callText1,
+        scriptText2: callText2,
+        scriptText3: callText3,
+        scriptText4: callText4
       })
     });
   });
 }
 
+// Makes link for tweet to all reps
+function makeTwitterAllLink(handles,stateComments) {
+  
+  var handleText = "";
+  
+  handles.forEach(function(h) { handleText = handleText + "%40" + h + " " })
+  
+  var twitterUrl = "https://twitter.com/intent/tweet?text=." + handleText + 
+      "Please tell the %40FCC you want them to protect %23NetNeutrality. " + 
+      cma(stateComments) + " of your constituents already did! " + LINK_URL;
+  
+  d3.select("#twitter-all-link").attr("href",twitterUrl)
+      
+}
+
 // Gets reps from Sunlight API response
 function getReps(json,state,dist) {
+  
+  if (state == "DC") { dist = 0; }
+  
   reps = _.where(json.results,{state:state,chamber:"house",district:dist})
   sens = _.where(json.results,{state:state,chamber:"senate"})
   
@@ -1062,7 +1168,7 @@ function render(geo,zip) {
   $("#district-callout").addClass("hide");
   
   // Removes zip alert
-  d3.selectAll(".zip-alert").text("");
+  d3.selectAll(".zip-alert").html("&nbsp;");
   
   // Removes rep images and social
   d3.selectAll(".to-remove").remove();

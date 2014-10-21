@@ -109,8 +109,24 @@ h1 {
   text-align: center;
   color: #fff;
   border-radius: 5px;
-  background: #2dbb9b;
+  background: -webkit-linear-gradient(top,#2dbb9b,#28a588);
   box-shadow: 0 2px 1px rgba(36,95,82,0.7);
+}
+
+.twitter-all {
+  margin: 0 auto;
+  margin: 20px 0px 20px 0px;
+  width
+  max-width: 500px;
+  font-size: 21px;
+  font-weight: bold;
+  border: 0px;
+  padding: 10px 15px 10px 15px;
+  text-align: center;
+  color: #fff;
+  border-radius: 5px;
+  background: -webkit-linear-gradient(top,#2dbb9b,#28a588);
+  cursor: pointer;
 }
 
 .form-box:focus {
@@ -118,7 +134,8 @@ h1 {
 }
 
 .zip-alert {
-  margin-top: 5px;
+  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
 .graphic-container {
@@ -127,8 +144,7 @@ h1 {
 }
 
 .graphic-div {
-  width: 380px;
-  height: 400px;
+  max-width: 400px;
   position: relative;
   display: inline-block;
   margin: 2px;
@@ -235,8 +251,9 @@ h1 {
   width: 160px;
   line-height: 15px;
   bottom: 10px;
-  color: #ffffff;
+  color: #ccc;
   text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
+  z-index: 10;
 }
 
 .social-div {
@@ -248,6 +265,7 @@ h1 {
   transition: opacity 0.3s;
   display: inline-block;
   vertical-align: top;
+  margin-top: 25px;
 }
 
 .social-div a {
@@ -307,6 +325,72 @@ h1 {
   font-size: 18px;
 }
 
+.call-script {
+  width: 350px;
+  text-align: center;
+}
+
+#modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  opacity: 0.5;
+  filter: alpha(opacity=50);
+  z-index: 100;
+}
+
+#modal {
+  position: absolute;
+  background-color: #7573bc;
+  border-radius: 10px;
+  box-shadow: 0px 0px 0px 0.1em #5C5C5C;
+  padding: 8px;
+  z-index: 101;
+}
+
+#modal-content {
+  border-radius: 8px;
+  background-color: #15151c;
+  padding: 20px;
+  color: #ccc;
+}
+
+#modal-close {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  display: block;
+  top: -7px;
+  right: -7px;
+  display: block;
+  background-color: #15151c;
+  border-radius: 50%;
+  border: 3px solid #ccc;
+  color: #ccc;
+  text-align: center;
+  line-height: 27px;
+  text-decoration: none;
+}
+
+.social-btn {
+  background: #3C5A96;
+  border-radius: 3px;
+  display: inline-block;
+  color: #fff;
+  height: 100%;
+  padding: 5px;
+  margin: 5px;
+  text-decoration: none;
+  transition: opacity .3s;
+  width: 180px;
+}
+
+.fb { background: #3C5A96; }
+.twtr { background: #59ADEB; }
+.rdt { background: #FF4500; }
 
 </style>
 
@@ -319,7 +403,7 @@ h1 {
     <form id="zip" >
       <div class="form-div">
         <input id="box1" class="form-box" type="text" name="zip-form" placeholder="Enter zip code">
-        <p class="zip-alert"></p>
+        <p class="zip-alert"> </p>
       </div>
       
       <div class="form-foot">
@@ -354,17 +438,34 @@ h1 {
     </p>
   </div>
   <div class="social-container">
-    <p class="social-callout"><strong>ISN'T IT TIME FOR YOUR REPRESENTATIVES TO TAKE A STAND?</strong></p>
+    <a id="twitter-all-link" href="">
+      <input class="twitter-all" type="submit" value="TELL YOUR LAWMAKERS">
+    </a>
     <div class="img-container"></div>
     <div>
       <form id="zip2">
         <input id="box2" class="form-box secondary" type="text" name="zip-form" placeholder="Enter another zip code">
-        <input class="form-submit secondary" type="submit" value="SUBMIT">
+        <input class="form-submit secondary" type="submit" value="SUBMIT" style="margin-bottom:2px">
       </form>
-      <p style="color: #666;" class="zip-alert"></p>
+      <p style="color: #666;" class="zip-alert"> </p>
     </div>
   </div>
+  <div class="site-social">
+    <a class="social-btn fb" href="https://www.facebook.com/sharer/sharer.php?u=battleforthenet.com/map">
+      <img src="https://www.battleforthenet.com/images/share/facebook.png">
+      <span class="text">&nbsp; Share on Facebook</span>
+    </a>
+    <a class="social-btn twtr" href="https://twitter.com/intent/tweet?text=This+is+why+your+Internet+is+slow.+It+will+get+worse%2C+unless+we+stop+it+now%3A+battleforthenet.com/map+%23InternetSlowdown&hashtags=&url=http%3A%2F%2Ft.co%2FQ1cRd1MHPg&related=fightfortheftr">
+      <img src="https://www.battleforthenet.com/images/share/twitter.png">
+      <span class="text">&nbsp; Share on Twitter</span>
+    </a>
+    <a class="social-btn rdt" href="https://www.reddit.com/submit?url=https%3A%2F%2Fbattleforthenet.com/map&title=This%20is%20why%20your%20Internet%20is%20slow.%20And%20it%E2%80%99ll%20get%20worse.%20Unless%20you%20take%201%20min%20to%20do%20this%2C%20now.">
+      <img src="https://www.battleforthenet.com/images/share/reddit.png">
+      <span class="text">&nbsp; Share on Reddit</span>
+    </a>
+  </div>
 </div>
+
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.4/queue.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/topojson/1.1.0/topojson.min.js"></script>
@@ -373,15 +474,13 @@ h1 {
 <script src="//cdnjs.cloudflare.com/ajax/libs/chosen/1.1.0/chosen.jquery.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
 
-
-
 <script>
 
 // Load data, set comma formatting, define Tweet URL
 var data = dataset.content;
 var cma = d3.format(",");
 var zero = d3.format("05d");
-var LINK_URL = "http://www.batteforthenet.com";
+var LINK_URL = "http://www.batteforthenet.com/map";
 
 // Finds which callouts to write and makes graphs
 function write(row,rankings,aggData) {
@@ -675,6 +774,8 @@ function nameDistrict(districtRow) {
 // Draws district map. Draws state outline, shades district
 function drawMap(districtRow) {
   
+  console.log(districtRow)
+  
   var district = districtRow.district_code,
       state = districtRow.state;
   
@@ -701,22 +802,31 @@ function drawMap(districtRow) {
         statePath = _.where(topojson.feature(us, us.objects.states).features,{id:state}),
         
         bounds = path.bounds(statePath[0].geometry),
+        geoWidth = bounds[1][0] - bounds[0][0],
+        geoHeight = bounds[1][1] - bounds[0][1],
         maxSize = Math.max((bounds[1][0] - bounds[0][0]),(bounds[1][1] - bounds[0][1])),
         
-        centered = path.centroid(statePath[0].geometry),
+        centered = path.centroid(statePath[0].geometry);
         
         x = centered[0],
         y = centered[1],
         k = Math.min(300/maxSize,30);
-        
+    
+    if (geoWidth >= geoHeight) {
+      finalWidth = mapWidth;
+      finalHeight = (mapWidth/geoWidth) * geoHeight;
+    } else {
+      finalHeight = mapHeight;
+      finalWidth = (mapHeight/geoHeight) * geoWidth;
+    }
         
     var svg = d3.select("#map").append("svg")
         .attr("class","to-remove")
-        .attr("width", mapWidth)
-        .attr("height", mapHeight);
+        .attr("width", finalWidth)
+        .attr("height", finalHeight);
     
     g = svg.append("g")
-        .attr("transform", "translate(" + mapWidth / 2 + "," + mapHeight / 2 + ")scale(" 
+        .attr("transform", "translate(" + finalWidth / 2 + "," + finalHeight / 2 + ")scale(" 
         + k + ")translate(" + -x + "," + -y + ")")
       
     g.append("defs").append("path")
@@ -753,8 +863,6 @@ function drawMap(districtRow) {
   }
 }
 
-
-
 function socialCallouts(zip,row,agg) {
 
   var renderRepCallout = Handlebars.compile("\
@@ -788,16 +896,13 @@ function socialCallouts(zip,row,agg) {
       </div>\
       \
       <div class='social-div'>\
-        <a href='{{twitterUrl}}'>\
+        <a href='{{twitterUrl}}' target='_blank'>\
           <span class='social-label'>Tweet:</span><icon class='icon-fixed-width icon-twitter'></icon>\
         </a>\
-        <a href='{{facebookUrl}}'>\
-          <span class='social-label'>Facebook:</span><icon class='icon-fixed-width icon-facebook'></icon>\
-        </a>\
-        <a href='tel:{{phoneNumber}}'>\
+        <a data-lookup-key='{{lookupKey}}' href='#' class='call-link'>\
           <span class='social-label'>Call:</span><icon class='icon-fixed-width icon-phone'></icon>\
         </a>\
-        <a href='{{contactFormUrl}}'>\
+        <a href='{{contactFormUrl}}' target='_blank'>\
           <span class='social-label'>E-mail:</span><icon class='icon-fixed-width icon-envelope'></icon>\
         </a>\
       </div>\
@@ -811,10 +916,14 @@ function socialCallouts(zip,row,agg) {
       json = JSON.parse(result);
   
   var state = row.letter_code,
+      stateName = row.name,
       district = row.district,
       stateComments = _.where(agg,{state:row.state})[0].comments
   
   var reps = getReps(json,state,district);
+  
+  var twitterHandles = _.pluck(reps,"twitter_id")
+  makeTwitterAllLink(twitterHandles,stateComments)
 
   var undecidedCount = 0;
   
@@ -835,25 +944,39 @@ function socialCallouts(zip,row,agg) {
           imgUrl = row.sen2_image,
           constituentComments = stateComments;
     }
-
+    
     var twitterUrl = "https://twitter.com/intent/tweet?text=.%40" + rep.twitter_id + 
       " Please tell the %40FCC you want them to protect %23NetNeutrality. " + 
       cma(constituentComments) + " of your constituents already did! " + LINK_URL
+  
+    var emailText = "Hello, I'm emailing you from " + stateName + ".%0A%0A" + 
+      "I'm calling today because the FCC is approaching a decision on its plan to allow " + 
+      "Internet service providers to charge for preferential treatment.%0A%0A" + 
+      "Those rules would destroy Net Neutrality. Those rules should be thrown out, and " +
+      "broadband instead reclassified as a telecommunications service, protecting Net " + 
+      "Neutrality for years to come.%0A%0A" + 
+      cma(constituentComments) + " of your constituents have already told the FCC " + 
+      "they oppose the plan. Can I count on you to reach out to the FCC in " + 
+      "opposition to their proposed rules?"
   
     if (stance === 'undecided') { undecidedCount += 1; }
 
     var repData = {
       lastName: rep.last_name,
+      fullName: rep.first_name + ' ' + rep.last_name,
       imgUrl: imgUrl,
       facebookUrl: "https://facebook.com/" + rep.facebook_id,
       phoneNumber: rep.phone,
       twitterUrl: twitterUrl,
-      contactFormUrl: rep.contact_form,
+      contactFormUrl: "mailto:" + rep.oc_email + "?Subject=Protecting%20Net%20Neutrality"+ 
+        "&body=" + emailText,
       chamber: rep.chamber.toUpperCase(),
+      constituentComments: constituentComments,
       stance: stance,
       repIsUndecided: (stance === 'undecided'),
       repIsOnTeamInternet: (stance === 'team-internet'),
-      repIsOnTeamCable: (stance === 'team-cable')
+      repIsOnTeamCable: (stance === 'team-cable'),
+      lookupKey: 'rep' + index
     };
 
     return repData;
@@ -877,19 +1000,80 @@ function socialCallouts(zip,row,agg) {
     return sortVal(rep1) - sortVal(rep2);
   };
 
+  var repDataCache = {};
   var seenStanceAlready = {};
-  repsWithData.sort(sortByStance).forEach(function(repData, index) {
+  repsWithData.sort(sortByStance).forEach(function(repData) {
     if (!seenStanceAlready[repData.stance]) {
       repData.showHeader = true;
       seenStanceAlready[repData.stance] = true;
     }
 
     $('.img-container').append(renderRepCallout(repData));
+    repDataCache[repData.lookupKey] = repData;
   });
+
+  var renderCallScript = Handlebars.compile("\
+    <div class='call-script'>\
+      <div class='script-header'>{{fullName}}</div>\
+      <div class='phone-number'>{{phoneNumber}}</div></br>\
+      {{scriptText1}}</br></br>\
+      {{scriptText2}}</br></br>\
+      {{scriptText3}}</br></br>\
+      {{scriptText4}}\
+    </div>\
+  ");
+
+  var modal = new Modal();
+
+  $('.call-link').on('click', function(e) {
+    e.preventDefault();
+    $link = $(this);
+    var repLookupKey = $link.data('lookup-key');
+    var repData = repDataCache[repLookupKey];
+    
+    var callText1 = "Hello, my name is _____ and I'm calling you from _____ (city or town).";
+    var callText2 = "I'm calling today because the FCC is approaching a decision on its plan to allow " + 
+      "Internet service providers to charge for preferential treatment.";
+    var callText3 = "Those rules would destroy Net Neutrality. Those rules should be thrown out, and " +
+      "broadband instead reclassified as a telecommunications service, protecting Net " + 
+      "Neutrality for years to come.";
+    var callText4 = cma(repData.constituentComments) + " of your constituents have already told the FCC " + 
+      "they oppose the plan. Can I count on you to reach out to the FCC in " + 
+      "opposition to their proposed rules?";
+
+    modal.open({
+      content: renderCallScript({
+        fullName: repData.fullName,
+        phoneNumber: repData.phoneNumber,
+        scriptText1: callText1,
+        scriptText2: callText2,
+        scriptText3: callText3,
+        scriptText4: callText4
+      })
+    });
+  });
+}
+
+// Makes link for tweet to all reps
+function makeTwitterAllLink(handles,stateComments) {
+  
+  var handleText = "";
+  
+  handles.forEach(function(h) { handleText = handleText + "%40" + h + " " })
+  
+  var twitterUrl = "https://twitter.com/intent/tweet?text=." + handleText + 
+      "Please tell the %40FCC you want them to protect %23NetNeutrality. " + 
+      cma(stateComments) + " of your constituents already did! " + LINK_URL;
+  
+  d3.select("#twitter-all-link").attr("href",twitterUrl)
+      
 }
 
 // Gets reps from Sunlight API response
 function getReps(json,state,dist) {
+  
+  if (state == "DC") { dist = 0; }
+  
   reps = _.where(json.results,{state:state,chamber:"house",district:dist})
   sens = _.where(json.results,{state:state,chamber:"senate"})
   
@@ -984,7 +1168,7 @@ function render(geo,zip) {
   $("#district-callout").addClass("hide");
   
   // Removes zip alert
-  d3.selectAll(".zip-alert").text("");
+  d3.selectAll(".zip-alert").html("&nbsp;");
   
   // Removes rep images and social
   d3.selectAll(".to-remove").remove();
@@ -1017,5 +1201,71 @@ function render(geo,zip) {
   // Render social callouts and images
   socialCallouts(zip,districtRow,aggData);
 }
+
+var Modal = function() {
+  var self = this;
+  var $overlay, $modal, $content, $close;
+
+  var init = function() {
+    // Generate the HTML and add it to the document
+    $overlay = $('<div id="modal-overlay"></div>');
+    $modal = $('<div id="modal"></div>');
+    $content = $('<div id="modal-content"></div>');
+    $close = $('<a id="modal-close" href="#"><i class="icon icon-remove icon-fixed-width"></i></a>');
+
+    $overlay.hide();
+    $modal.append($content);
+    $modal.append($close);
+    $modal.hide();
+
+    $(document).ready(function(){
+      $('body').append($overlay, $modal);
+    });
+
+    $close.click(function(e){
+      e.preventDefault();
+      self.close();
+    });
+  };
+
+  // Open the modal
+  this.open = function (settings) {
+    $content.empty().append(settings.content);
+
+    $modal.css({
+      width: settings.width || 'auto',
+      height: settings.height || 'auto'
+    });
+
+    center();
+    $(window).bind('resize.modal', center);
+
+    $modal.show();
+    $overlay.show();
+  };
+
+  // Close the modal
+  this.close = function () {
+    $modal.hide();
+    $overlay.hide();
+    $content.empty();
+    $(window).unbind('resize.modal');
+  };
+
+  // Center the modal in the viewport
+  var center = function () {
+    var top, left;
+
+    top = Math.max($(window).height() - $modal.outerHeight(), 0) / 2;
+    left = Math.max($(window).width() - $modal.outerWidth(), 0) / 2;
+
+    $modal.css({
+      top:top + $(window).scrollTop(),
+      left:left + $(window).scrollLeft()
+    });
+  };
+
+  init();
+};
 
 </script>
